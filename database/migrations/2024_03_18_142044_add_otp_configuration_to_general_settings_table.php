@@ -13,11 +13,11 @@ class AddOtpConfigurationToGeneralSettingsTable extends Migration
      */
     public function up()
     {
-        Schema::table('general_settings', function (Blueprint $table) {
-            $table->after('open_ai_setting', function (Blueprint $table) {
-                $table->longText('otp_configuration')->nullable();
+        if (!Schema::hasColumn('general_settings', 'otp_configuration')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->longText('otp_configuration')->nullable()->after('open_ai_setting');
             });
-        });
+        }
     }
 
     /**
