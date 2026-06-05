@@ -36,6 +36,17 @@
 
         </div>
 
+        @if ($errors->any())
+            <div class="alert alert-danger">
+                <strong>{{ translate('Please fix the following errors') }}:</strong>
+                <ul class="mb-0 mt-2 ps-3">
+                    @foreach ($errors->all() as $error)
+                        <li>{{ translate($error) }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <form  id="createproduct-form" autocomplete="off" class="needs-validation"  action="{{route('admin.item.product.inhouse.store')}}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="row">
@@ -182,7 +193,7 @@
                                 
                                 <div class="col-xl-12 col-lg-12">
                                     <div>
-                                        <label for="club_point" class="form-label">{{translate('Club point')}} <small class="text-muted">{{translate('(optional)')}}</small></label>
+                                        <label for="club_point" class="form-label">{{translate('Club point')}} <span class="text-danger">*</span></label>
                                         <input type="number" class="form-control" name="point"
                                             id="club_point" value="{{old('point')}}"
                                             placeholder="{{translate('Enter club point')}}">
@@ -503,7 +514,7 @@
                     <div class="card">
                         <div class="card-header border-bottom-dashed">
                             <h5 class="card-title mb-0">
-                                {{translate("Product Warranty Policy")}}
+                                {{translate("Product Warranty Policy")}} <span class="text-danger">*</span>
                             </h5>
                         </div>
                         <div class="card-body">
@@ -560,7 +571,7 @@
                             <div class="mb-3">
 
                                 <label class="form-label" for="shipping_fee">
-                                    {{translate("Flat shipping fees")}} <small class="text-muted">{{translate('(optional)')}}</small>
+                                    {{translate("Flat shipping fees")}} <span class="text-danger">*</span>
                                 </label>
 
                                 <input step="any" placeholder="{{translate("Enter shipping fees")}}"  name="shipping_fee" id="shipping_fee" type="number" class="form-control"  value="{{old('shipping_fee')}}">
