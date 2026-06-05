@@ -13,13 +13,11 @@ class AddOtpToUsersTable extends Migration
      */
     public function up()
     {
-        Schema::table('users', function (Blueprint $table) {
-
-            $table->after('google_id', function (Blueprint $table) {
-                $table->mediumInteger('otp_code')->nullable();
+        if (!Schema::hasColumn('users', 'otp_code')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->mediumInteger('otp_code')->nullable()->after('google_id');
             });
-           
-        });
+        }
     }
 
     /**
