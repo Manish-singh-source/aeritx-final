@@ -1,5 +1,12 @@
 @extends('seller.layouts.app')
 @section('main_content')
+@php
+    $sellerPriceOffer = $product->sellerPriceOffers->first();
+    $displayPrice = $sellerPriceOffer && !is_null($sellerPriceOffer->seller_price)
+        ? $sellerPriceOffer->seller_price
+        : $product->price;
+    $displayQuantity = $sellerPriceOffer ? $sellerPriceOffer->quantity : null;
+@endphp
 <div class="page-content">
     <div class="container-fluid">
 
@@ -84,8 +91,17 @@
                                     <span class="fw-semibold">
                                         {{translate('Price')}}
                                     </span>
-                                    <span>{{short_amount($product->price)}}</span>
+                                    <span>{{short_amount($displayPrice)}}</span>
                                 </li>
+
+                                @if(!is_null($displayQuantity))
+                                <li class=" d-flex justify-content-between align-items-center flex-wrap gap-2 list-group-item">
+                                    <span class="fw-semibold">
+                                        {{translate('Quantity')}}
+                                    </span>
+                                    <span>{{$displayQuantity}}</span>
+                                </li>
+                                @endif
 
                                 <li class=" d-flex justify-content-between align-items-center flex-wrap gap-2 list-group-item">
                                     <span class="fw-semibold">

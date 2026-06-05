@@ -34,7 +34,15 @@ class HomeController extends Controller
     {
         $title   = translate('Seller dashboard');
         $seller  = Auth::guard('seller')->user();
-        $data['physical'] = Product::sellerProduct()->physical()->where('seller_id', $seller->id)->count();
+        $data['physical'] = Product::sellerProduct()
+            ->physical()
+            ->where(function ($query) use ($seller) {
+                $query->where('seller_id', $seller->id)
+                    ->orWhereHas('sellerPriceOffers', function ($sellerPriceQuery) use ($seller) {
+                        $sellerPriceQuery->where('seller_id', $seller->id);
+                    });
+            })
+            ->count();
         $data['digital'] = Product::sellerProduct()->digital()->where('seller_id', $seller->id)->count();
         $data['withdraw_amount'] = Withdraw::where('seller_id', $seller->id)->approved()->sum('amount');
         $data['total_ticket'] = SupportTicket::where("seller_id", $seller->id)->count();

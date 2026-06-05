@@ -284,9 +284,47 @@
                                             </div>
                                         </div>
 									</div>
-								</div>
 							</div>
 						</div>
+					</div>
+
+						@if($product->sellerPriceOffers->isNotEmpty())
+							<div class="my-4">
+								<h5 class="fw-bold mb-3 fs-14">{{translate('Seller Prices')}}</h5>
+								<div class="table-responsive">
+									<table class="table table-bordered align-middle">
+										<thead class="table-light">
+											<tr>
+												<th>{{translate('Seller')}}</th>
+												<th>{{translate('Price')}}</th>
+												<th>{{translate('Quantity')}}</th>
+												{{-- <th>{{translate('Added Amount')}}</th> --}}
+												<th>{{translate('Updated At')}}</th>
+											</tr>
+										</thead>
+										<tbody>
+											@foreach($product->sellerPriceOffers as $sellerPrice)
+												@php
+													$sellerPriceValue = is_null($sellerPrice->seller_price) ? null : (float) $sellerPrice->seller_price;
+													$quantity = (int) ($sellerPrice->quantity ?? 0);
+													$basePrice = (float) $product->price;
+													$addedAmount = is_null($sellerPriceValue) ? null : ($sellerPriceValue - $basePrice) * $quantity;
+												@endphp
+												<tr>
+													<td>
+														{{ $sellerPrice->seller?->name ?? translate('Unknown seller') }}
+													</td>
+													<td>{{ is_null($sellerPriceValue) ? translate('N/A') : short_amount($sellerPriceValue) }}</td>
+													<td>{{ $quantity }}</td>
+													{{-- <td>{{ is_null($addedAmount) ? translate('N/A') : short_amount($addedAmount) }}</td> --}}
+													<td>{{ get_date_time($sellerPrice->updated_at,'d M, Y h:i A') }}</td>
+												</tr>
+											@endforeach
+										</tbody>
+									</table>
+								</div>
+							</div>
+						@endif
 
 						<div class="my-4">
 							<h5 class="fw-bold mb-3 fs-14">{{translate('Product Description')}}</h5>

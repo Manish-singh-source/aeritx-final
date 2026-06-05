@@ -6,6 +6,9 @@
 @endpush
 
 @section('main_content')
+@php
+    $sellerProductMode = $sellerProductMode ?? false;
+@endphp
 
 <div class="page-content">
     <div class="container-fluid">
@@ -20,13 +23,13 @@
                             {{translate("Home")}}
                     </a></li>
                     <li class="breadcrumb-item">
-                        <a href="{{route('admin.item.product.inhouse.index')}}">
-                            {{translate("Products")}}
+                        <a href="{{ $sellerProductMode ? route('admin.product.seller.index') : route('admin.item.product.inhouse.index') }}">
+                            {{translate($sellerProductMode ? "Seller Products" : "Products")}}
                         </a>
                     </li>
                     <li class="breadcrumb-item active">
 
-                        {{translate("Create Product")}}
+                        {{translate($sellerProductMode ? "Create Seller Product" : "Create Product")}}
                     </li>
                 </ol>
             </div>
@@ -74,17 +77,66 @@
                                     </div>
                                 </div>
 
+                                @if($sellerProductMode)
+                                    <div class="col-xl-6 col-lg-12">
+                                        <div>
+                                            <label class="form-label">
+                                                {{translate("Seller")}} <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="border rounded p-3">
+                                                <div class="row g-2">
+                                                    @foreach(getSeller() as $seller)
+                                                        <div class="col-lg-6 col-12">
+                                                            <div class="form-check">
+                                                                <input
+                                                                    class="form-check-input"
+                                                                    type="checkbox"
+                                                                    name="seller_ids[]"
+                                                                    id="seller_{{ $seller->id }}"
+                                                                    value="{{ $seller->id }}"
+                                                                    {{ in_array($seller->id, old('seller_ids', [])) ? 'checked' : '' }}
+                                                                >
+                                                                <label class="form-check-label" for="seller_{{ $seller->id }}">
+                                                                    {{ $seller->name }}
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <div class="col-xl-6 col-lg-6">
                                     <div>
                                         <label class="form-label" for="price">
-                                            {{translate("Regular price")}} <span class="text-danger" >*</span>
+                                            {{translate("Regular price")}}
+                                            @if(! $sellerProductMode)
+                                                <small class="text-muted">{{translate('(optional)')}}</small>
+                                            @endif
                                         </label>
 
                                         <input step="any" type="number" class="form-control" id="price" name="price"
-                                        required value="{{old('price')}}" placeholder="{{translate('Product price')}}">
+                                        value="{{old('price')}}" placeholder="{{translate('Product price')}}">
 
                                     </div>
                                 </div>
+
+                                @if($sellerProductMode)
+                                    <div class="col-xl-6 col-lg-6">
+                                        <div>
+                                            <label class="form-label" for="hsn">
+                                                {{translate("HSN")}}
+                                                <small class="text-muted">{{translate('(optional)')}}</small>
+                                            </label>
+
+                                            <input type="number" class="form-control" id="hsn" name="hsn"
+                                                min="0" value="{{ old('hsn') }}"
+                                                placeholder="{{translate('Enter HSN code')}}">
+                                        </div>
+                                    </div>
+                                @endif
 
                               
 
@@ -130,10 +182,10 @@
                                 
                                 <div class="col-xl-12 col-lg-12">
                                     <div>
-                                        <label for="club_point" class="form-label">{{translate('Club point')}} <span class="text-danger">*</span></label>
+                                        <label for="club_point" class="form-label">{{translate('Club point')}} <small class="text-muted">{{translate('(optional)')}}</small></label>
                                         <input type="number" class="form-control" name="point"
-                                            id="club_point" value="{{old('point') ?  old('point') : 0}}"
-                                            placeholder="{{translate('Enter club point')}}" required>
+                                            id="club_point" value="{{old('point')}}"
+                                            placeholder="{{translate('Enter club point')}}">
                                     </div>
                                 </div>
 
@@ -459,7 +511,7 @@
                                 {{translate("Add warranty policy of product")}}
                             </p>
 
-                            <textarea required class="form-control " name="warranty_policy" rows="5"
+                            <textarea class="form-control " name="warranty_policy" rows="5"
                                     placeholder="{{translate('Enter warranty policy')}}" >{{old('warranty_policy')}}</textarea>
                         </div>
 
@@ -508,11 +560,10 @@
                             <div class="mb-3">
 
                                 <label class="form-label" for="shipping_fee">
-                                    {{translate("Flat shipping fees")}} <span class="text-danger" >*</span>
+                                    {{translate("Flat shipping fees")}} <small class="text-muted">{{translate('(optional)')}}</small>
                                 </label>
 
-                                <input step="any" placeholder="{{translate("Enter shipping fees")}}"  name="shipping_fee" id="shipping_fee" type="number" class="form-control"  value="{{old('shipping_fee')}}"
-                                     required>
+                                <input step="any" placeholder="{{translate("Enter shipping fees")}}"  name="shipping_fee" id="shipping_fee" type="number" class="form-control"  value="{{old('shipping_fee')}}">
 
                             </div>
 

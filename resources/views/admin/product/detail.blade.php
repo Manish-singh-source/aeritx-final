@@ -134,8 +134,60 @@
                                 <span class="font-weight-bold">{{$product->wishlist->count()}}</span>
                             </li>
 
+                            <li class="d-flex justify-content-between align-items-center flex-wrap gap-2 list-group-item">
+                                <span class="fw-semibold">
+                                    {{translate('Assigned Sellers')}}
+                                </span>
+                                <span class="font-weight-bold">{{$product->sellerPriceOffers->count()}}</span>
+                            </li>
+
+                            <li class="d-flex justify-content-between align-items-center flex-wrap gap-2 list-group-item">
+                                <span class="fw-semibold">
+                                    {{translate('Updated Seller Prices')}}
+                                </span>
+                                <span class="font-weight-bold">{{$product->sellerPriceOffers->whereNotNull('seller_price')->count()}}</span>
+                            </li>
+
+                            <li class="d-flex justify-content-between align-items-center flex-wrap gap-2 list-group-item">
+                                <span class="fw-semibold">
+                                    {{translate('Total Assigned Quantity')}}
+                                </span>
+                                <span class="font-weight-bold">{{$product->sellerPriceOffers->sum('quantity')}}</span>
+                            </li>
+
+                            <li class="d-flex justify-content-between align-items-center flex-wrap gap-2 list-group-item">
+                                <span class="fw-semibold">
+                                    {{translate('Total Added Amount')}}
+                                </span>
+                                @php
+                                    $totalAddedAmount = $product->sellerPriceOffers->whereNotNull('seller_price')->sum(function ($sellerPrice) use ($product) {
+                                        $quantity = (int) ($sellerPrice->quantity ?? 0);
+                                        return ((float) $sellerPrice->seller_price - (float) $product->price) * $quantity;
+                                    });
+                                @endphp
+                                <span class="font-weight-bold">{{ short_amount($totalAddedAmount) }} {{ default_currency()->name }}</span>
+                            </li>
+
 
                         </ul>
+
+                        <div class="mt-4">
+                            <h6 class="mb-3 fw-bold">{{translate('Assign sellers to this product')}}</h6>
+                            @php
+                                $assignedSellerIds = $product->sellerPriceOffers->pluck('seller_id')->toArray();
+                            @endphp
+                            <form action="{{route('admin.item.product.inhouse.assign.sellers', $product->id)}}" method="POST">
+                                @csrf
+                                <div class="mb-3">
+                                    <select name="seller_ids[]" class="form-select" multiple required>
+                                        @foreach(getSeller() as $seller)
+                                            <option value="{{$seller->id}}" @selected(in_array($seller->id, $assignedSellerIds))>{{$seller->name}} (@{{$seller->username}})</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <button type="submit" class="btn btn-primary w-100">{{translate('Assign sellers')}}</button>
+                            </form>
+                        </div>
                     </div>
                     </div>
 				</div>
@@ -332,12 +384,61 @@
                                         @endforeach
                                     </div>
                                 </section>
-                            </div>
-						</div>
 					 </div>
 				</div>
+
+                <div class="card mt-4">
+                    <div class="card-header border-bottom-dashed">
+                        <h5 class="card-title mb-0">{{translate('Seller price report')}}</h5>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="table-responsive table-card">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-light">
+                                    <tr class="text-uppercase">
+                                        <th>{{translate('Seller')}}</th>
+                                        <th>{{translate('Base Price')}}</th>
+                                        <th>{{translate('Seller Price')}}</th>
+                                        <th>{{translate('Quantity')}}</th>
+                                        <th>{{translate('Added Amount')}}</th>
+                                        <th>{{translate('Total Added')}}</th>
+                                        <th>{{translate('Updated At')}}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($product->sellerPriceOffers as $sellerPrice)
+                                        @php
+                                            $basePrice = (float) $product->price;
+                                            $sellerPriceValue = is_null($sellerPrice->seller_price) ? null : (float) $sellerPrice->seller_price;
+                                            $quantity = (int) ($sellerPrice->quantity ?? 0);
+                                            $addedAmount = is_null($sellerPriceValue) ? null : ($sellerPriceValue - $basePrice);
+                                            $totalAdded = is_null($sellerPriceValue) ? null : ($sellerPriceValue - $basePrice) * $quantity;
+                                        @endphp
+                                        <tr>
+                                            <td>{{ $sellerPrice->seller?->name ?? translate('N/A') }}</td>
+                                            <td>{{ short_amount($basePrice) }} {{ default_currency()->name }}</td>
+                                            <td>{{ is_null($sellerPriceValue) ? translate('Pending') : short_amount($sellerPriceValue).' '.default_currency()->name }}</td>
+                                            <td>{{ $quantity }}</td>
+                                            <td>{{ is_null($addedAmount) ? translate('Pending') : short_amount($addedAmount).' '.default_currency()->name }}</td>
+                                            <td>{{ is_null($totalAdded) ? translate('Pending') : short_amount($totalAdded).' '.default_currency()->name }}</td>
+                                            <td>{{ $sellerPrice->submitted_at ? get_date_time($sellerPrice->submitted_at, 'd M Y h:i A') : translate('Not updated yet') }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="7" class="text-center">{{translate('No sellers assigned yet')}}</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+					</div>
+				 </div>
+				</div>
 			</div>
-		</div>
 
     </div>
 </div>

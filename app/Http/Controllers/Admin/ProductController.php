@@ -21,6 +21,7 @@ use App\Http\Utility\ProductGallery;
 use App\Models\AttributeValue;
 use App\Models\Cart;
 use App\Models\DigitalProductAttributeValue;
+use App\Models\ProductSellerPrice;
 use App\Models\ProductRating;
 use App\Models\Tax;
 use Carbon\Carbon;
@@ -70,10 +71,39 @@ class ProductController extends Controller
     public function details($id)
     {
         $title = translate('Product details');
-        $product = Product::with(['shippingDelivery',"shippingDelivery.shippingDelivery",'rating','rating.customer'])->withCount(['rating'])->where('id', $id)->firstOrFail();
+        $product = Product::with([
+            'shippingDelivery',
+            'shippingDelivery.shippingDelivery',
+            'rating',
+            'rating.customer',
+            'sellerPriceOffers.seller',
+        ])->withCount(['rating'])->where('id', $id)->firstOrFail();
 
 
         return view('admin.product.detail', compact('title', 'product'));
+    }
+
+    public function assignSellerPrices(Request $request, $id)
+    {
+        $request->validate([
+            'seller_ids' => ['required', 'array', 'min:1'],
+            'seller_ids.*' => ['required', 'exists:sellers,id'],
+        ]);
+
+        $product = Product::inhouseProduct()->physical()->findOrFail($id);
+        $sellerIds = array_values(array_unique(array_filter($request->input('seller_ids', []))));
+
+        foreach ($sellerIds as $sellerId) {
+            ProductSellerPrice::firstOrCreate([
+                'product_id' => $product->id,
+                'seller_id' => $sellerId,
+            ], [
+                'assigned_by' => auth('admin')->id(),
+                'quantity' => 0,
+            ]);
+        }
+
+        return back()->with('success', translate('Sellers have been assigned to this product'));
     }
 
 
@@ -141,6 +171,8 @@ class ProductController extends Controller
     {
 
         $featuredImage = null;
+        $sellerIds = array_values(array_unique(array_filter((array) $request->input('seller_ids', []))));
+        $primarySellerId = $sellerIds[0] ?? ($request->seller_id ?: null);
 
 
 
@@ -155,13 +187,15 @@ class ProductController extends Controller
         $product = Product::create([
             'name'=> $request->name,
             'slug'=> make_slug($request->slug),
-            'point'=> ($request->point),
+            'point'=> $request->input('point', 0),
+            'hsn'=> $request->input('hsn'),
             'product_type' => Product::PHYSICAL,
-            'price'=> $request->price,
+            'seller_id' => $primarySellerId,
+            'price'=> $request->price ?? 0,
             'weight'=> $request->input('weight',0),
-            'shipping_fee'=> $request->shipping_fee,
+            'shipping_fee'=> $request->input('shipping_fee', 0),
             'shipping_fee_multiply'=> $request->shipping_fee_multiply ?  $request->shipping_fee_multiply : 0,
-            'discount'=> $request->discount_percentage ? $request->price - ($request->price * $request->discount_percentage / 100) : null,
+            'discount'=> $request->discount_percentage && $request->price ? $request->price - ($request->price * $request->discount_percentage / 100) : null,
             'discount_percentage'=> $request->discount_percentage ?? null,
             'minimum_purchase_qty'=> $request->minimum_purchase_qty,
             'maximum_purchase_qty'=> $request->maximum_purchase_qty,
@@ -170,7 +204,7 @@ class ProductController extends Controller
             'sub_category_id'=> $request->subcategory_id,
             'short_description'=>build_dom_document($request->short_description,'short_descripiton'.rand(10,1000)),
             'description'=> build_dom_document($request->description,'descripiton'.rand(10,1000)),
-            'warranty_policy'=> $request->warranty_policy,
+            'warranty_policy'=> $request->warranty_policy ?: null,
             'featured_image'=> $featuredImage,
             'status'=> $request->status,
             'meta_title'=> $request->meta_title,
@@ -261,8 +295,27 @@ class ProductController extends Controller
         }
 
          $this->stockStore($request->only([
-             'choice_no','product_id'
+              'choice_no','product_id'
         ]), $product);
+
+        if (count($sellerIds) > 0) {
+            foreach ($sellerIds as $sellerId) {
+                ProductSellerPrice::firstOrCreate(
+                    [
+                        'product_id' => $product->id,
+                        'seller_id' => (int) $sellerId,
+                    ],
+                    [
+                        'assigned_by' => auth('admin')->id(),
+                        'quantity' => 0,
+                    ]
+                );
+            }
+        }
+
+        if ($request->filled('seller_id') || count($sellerIds) > 0) {
+            return redirect()->route('admin.product.seller.index')->with('success', translate("Seller product has been created"));
+        }
 
         return back()->with('success', translate("Product has been created"));
     }

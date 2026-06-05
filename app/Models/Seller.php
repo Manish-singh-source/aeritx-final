@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Facades\Cache;
 use App\Enums\Settings\CacheKey;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -18,6 +19,9 @@ class Seller extends Authenticatable
         'username',
         'email',
         'phone',
+        'gst_number',
+        'aadhar_card',
+        'pan_card',
         'status',
         'password',
         'image',
@@ -56,6 +60,11 @@ class Seller extends Authenticatable
     public function product()
     {
         return $this->hasMany(Product::class, 'seller_id')->withTrashed();
+    }
+
+    public function productPriceOffers() :HasMany
+    {
+        return $this->hasMany(ProductSellerPrice::class, 'seller_id');
     }
 
     public function transaction()

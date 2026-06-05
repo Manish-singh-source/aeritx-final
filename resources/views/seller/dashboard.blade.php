@@ -14,13 +14,6 @@
                     </h4>
                 </div>
 
-                <div class="mt-3 mt-lg-0">
-                    <a href="{{route('seller.product.create')}}"
-                        class="btn btn-soft-success waves ripple-light">
-                            <i class="ri-add-circle-line align-middle me-1"></i>
-                            {{translate('Add Product')}}
-                    </a>
-                </div>
             </div>
 
             <div class="row">

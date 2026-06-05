@@ -62,6 +62,21 @@
 										</div>
 
 										<div class="col-6">
+											<label for="gst_number" class="form-label">{{translate('GST Number (GSTIN)')}}</label>
+											<input type="text" name="gst_number" id="gst_number" class="form-control" value="{{old('gst_number')}}" placeholder="{{translate('Enter GST Number')}}">
+										</div>
+
+										<div class="col-6">
+											<label for="aadhar_card" class="form-label">{{translate('Aadhar Card')}}</label>
+											<input type="text" name="aadhar_card" id="aadhar_card" class="form-control" value="{{old('aadhar_card')}}" placeholder="{{translate('Enter Aadhar Card Number')}}">
+										</div>
+
+										<div class="col-6">
+											<label for="pan_card" class="form-label">{{translate('PAN Card')}}</label>
+											<input type="text" name="pan_card" id="pan_card" class="form-control" value="{{old('pan_card')}}" placeholder="{{translate('Enter PAN Card Number')}}">
+										</div>
+
+										<div class="col-6">
 											<label for="password" class="form-label">{{translate('Password')}} <span class="text-danger">*</span></label>
 											<input type="text" required name="password" id="password" class="form-control" value="{{old('password')}}" placeholder="{{translate('Enter password')}}" >
 										</div>

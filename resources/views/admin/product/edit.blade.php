@@ -20,8 +20,8 @@
                             {{translate("Home")}}
                     </a></li>
                     <li class="breadcrumb-item">
-                        <a href="{{route('admin.item.product.inhouse.index')}}">
-                            {{translate("Products")}}
+                        <a href="{{ ($sellerProductUpdateMode ?? false) ? route('admin.product.seller.index') : route('admin.item.product.inhouse.index') }}">
+                            {{translate(($sellerProductUpdateMode ?? false) ? "Seller Products" : "Products")}}
                         </a>
                     </li>
                     <li class="breadcrumb-item active">
@@ -33,7 +33,7 @@
 
         </div>
 
-        <form  id="updateproduct-form" autocomplete="off" class="needs-validation"  action="{{route('admin.item.product.inhouse.update', $product->id)}}" method="POST" enctype="multipart/form-data">
+        <form  id="updateproduct-form" autocomplete="off" class="needs-validation"  action="{{ ($sellerProductUpdateMode ?? false) ? route('admin.product.seller.update', $product->id) : route('admin.item.product.inhouse.update', $product->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             <div class="row">
 				<input hidden  name="id" id="id" type="text" class="form-control"  value="{{$product->id}}">
@@ -76,6 +76,41 @@
                                     </div>
                                 </div>
 
+                                @if($sellerProductUpdateMode ?? false)
+                                    @php
+                                        $selectedSellerIds = old('seller_ids', $selectedSellerIds ?? []);
+                                        $selectedSellerIds = array_map('intval', $selectedSellerIds);
+                                    @endphp
+                                    <div class="col-xl-12">
+                                        <div class="mb-3">
+                                            <label class="form-label">
+                                                {{translate("Seller")}} <span class="text-danger">*</span>
+                                            </label>
+                                            <div class="border rounded p-3">
+                                                <div class="row g-2">
+                                                    @foreach(getSeller() as $seller)
+                                                        <div class="col-lg-4 col-md-6 col-12">
+                                                            <div class="form-check">
+                                                                <input
+                                                                    class="form-check-input"
+                                                                    type="checkbox"
+                                                                    name="seller_ids[]"
+                                                                    id="seller_{{ $seller->id }}"
+                                                                    value="{{ $seller->id }}"
+                                                                    {{ in_array((int) $seller->id, $selectedSellerIds, true) ? 'checked' : '' }}
+                                                                >
+                                                                <label class="form-check-label" for="seller_{{ $seller->id }}">
+                                                                    {{ $seller->name }}
+                                                                </label>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+
                                 <div class="col-xl-6 col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label" for="price">
@@ -87,6 +122,21 @@
 
                                     </div>
                                 </div>
+
+                                @if($sellerProductUpdateMode ?? false)
+                                    <div class="col-xl-6 col-md-6">
+                                        <div class="mb-3">
+                                            <label class="form-label" for="hsn">
+                                                {{translate("HSN")}}
+                                                <small class="text-muted">{{translate('(optional)')}}</small>
+                                            </label>
+
+                                            <input type="number" class="form-control" id="hsn" name="hsn" min="0"
+                                                value="{{ old('hsn', $product->hsn ?? '') }}"
+                                                placeholder="{{translate('Enter HSN code')}}">
+                                        </div>
+                                    </div>
+                                @endif
 
 
                                 <div class="col-xl-6 col-md-6">
@@ -234,7 +284,7 @@
 												<div class="gallery_img-item">
 													<img src="{{show_image(file_path()['product']['gallery']['path'].'/'.$value->image,file_path()['product']['gallery']['size'])}}" alt="{{$product->name}}">
 													<div class="gallery_img-item_icon">
-														<a href="{{route('admin.item.product.inhouse.gallery.image.delete', $value->id)}}"><i class="las la-times-circle"></i></a>
+														<a href="{{ ($sellerProductUpdateMode ?? false) ? route('admin.product.seller.gallery.image.delete', $value->id) : route('admin.item.product.inhouse.gallery.image.delete', $value->id) }}"><i class="las la-times-circle"></i></a>
 													</div>
 												</div>
 										    @endforeach

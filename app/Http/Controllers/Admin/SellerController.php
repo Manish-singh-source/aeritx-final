@@ -170,6 +170,9 @@ class SellerController extends Controller
             'name'     => 'nullable|max:120',
             'email'    => 'nullable|unique:sellers,email,'.request()->route('id'),
             'phone'    => 'nullable|unique:sellers,phone,'.request()->route('id'),
+            'gst_number' => 'nullable|max:50',
+            'aadhar_card' => 'nullable|max:50',
+            'pan_card' => 'nullable|max:50',
             'address'  => 'nullable|max:250',
             'city'     => 'nullable|max:250',
             'state'    => 'nullable|max:250',
@@ -182,6 +185,9 @@ class SellerController extends Controller
         $seller->name   = $request->name;
         $seller->email  = $request->email;
         $seller->phone  = $request->phone;
+        $seller->gst_number  = $request->input('gst_number');
+        $seller->aadhar_card = $request->input('aadhar_card');
+        $seller->pan_card    = $request->input('pan_card');
         $address = [
             'address' => $request->address,
             'city'    => $request->city,
@@ -380,6 +386,9 @@ class SellerController extends Controller
             'email'    => 'required|unique:sellers,email',
             'username' => 'required|unique:sellers,username',
             'phone'    => 'required|unique:sellers,phone',
+            'gst_number' => 'nullable|max:50',
+            'aadhar_card' => 'nullable|max:50',
+            'pan_card' => 'nullable|max:50',
             'address'  => 'nullable|max:250',
             'city'     => 'nullable|max:250',
             'state'    => 'nullable|max:250',
@@ -392,6 +401,9 @@ class SellerController extends Controller
         $seller->email  = $request->input('email');
         $seller->phone  = $request->input('phone');
         $seller->username  = $request->input('username');
+        $seller->gst_number  = $request->input('gst_number');
+        $seller->aadhar_card = $request->input('aadhar_card');
+        $seller->pan_card    = $request->input('pan_card');
         $seller->password  = Hash::make($request->input('password'));
         $address = [
             'address' => $request->input('address'),

@@ -55,7 +55,7 @@
                             else{
                                 echo round(($unit_price));
                             }
-                            @endphp" min="0" step="0.01" class="form-control" required>
+                            @endphp" min="0" step="0.01" class="form-control">
                 </td>
 
                 <td>
@@ -66,7 +66,7 @@
                             else{
                                 echo '10';
                             }
-                           @endphp" min="0" step="1" class="form-control" required>
+                           @endphp" min="0" step="1" class="form-control">
                 </td>
             </tr>
             @endif

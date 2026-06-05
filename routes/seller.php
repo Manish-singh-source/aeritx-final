@@ -89,6 +89,9 @@ Route::middleware($globalMiddleware)->group(function(){
             //permanent delete
             Route::post('product/permanent-delete', [ProductController::class, 'permanentDelete'])->name('product.permanentDelete');
 
+            Route::get('assigned/products', [ProductController::class, 'assignedProducts'])->name('product.assigned');
+            Route::post('assigned/product/price/update/{id}', [ProductController::class, 'updateAssignedPrice'])->name('product.assigned.price.update');
+
             Route::post('/product/combination', [ProductController::class, 'combination'])->name('product.combination');
             Route::post('/product/attribute', [ProductController::class, 'attrValue'])->name('product.attribute.value');
             Route::post('/product/attribute/edit', [ProductController::class, 'stock_edit'])->name('product.attribute.edit');

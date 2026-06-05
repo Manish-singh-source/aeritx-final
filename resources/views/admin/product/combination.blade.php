@@ -46,11 +46,11 @@
                         <input type="text"  name="display_name_{{ $varient_name }}" value="{{ $varient_name }}" class="form-control" required>
                     </td>
                     <td>
-                        <input type="number"  name="price_{{ $varient_name }}" value="{{ $unit_price }}" min="0" step="0.01" class="form-control" required>
+                        <input type="number"  name="price_{{ $varient_name }}" value="{{ $unit_price }}" min="0" step="0.01" class="form-control">
                     </td>
     
                     <td>
-                        <input type="number"  name="qty_{{ $varient_name }}" value="10" min="0" step="1" class="form-control" required>
+                        <input type="number"  name="qty_{{ $varient_name }}" value="10" min="0" step="1" class="form-control">
                     </td>
     
                 </tr>

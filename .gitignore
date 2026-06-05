@@ -12,3 +12,6 @@
 .env.backup
 /src/bootstrap
 
+public/assets/images/
+public/assets/file/
+public/uploads/

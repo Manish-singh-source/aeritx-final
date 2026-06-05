@@ -206,6 +206,7 @@ Route::prefix('/admin')->name('admin.')->middleware($globalMiddleware)->group(fu
         Route::post('inhouse/product/store', [ProductController::class, 'store'])->name('item.product.inhouse.store');
         Route::post('inhouse/product/update/{id}', [ProductController::class, 'update'])->name('item.product.inhouse.update');
         Route::get('inhouse/product/edit/{id}', [ProductController::class, 'edit'])->name('item.product.inhouse.edit');
+        Route::post('inhouse/product/assign-sellers/{id}', [ProductController::class, 'assignSellerPrices'])->name('item.product.inhouse.assign.sellers');
         Route::post('inhouse/product/delete', [ProductController::class, 'delete'])->name('item.product.inhouse.delete');
         Route::get('inhouse/product/trashed', [ProductController::class, 'trashed'])->name('item.product.inhouse.trashed');
         Route::post('inhouse/product/restore', [ProductController::class, 'restore'])->name('item.product.inhouse.restore');
@@ -244,9 +245,10 @@ Route::prefix('/admin')->name('admin.')->middleware($globalMiddleware)->group(fu
 
         Route::middleware(['sellerMode.status.check'])->group(function () {
 
-            Route::get('seller/product/list', [SellerProductController::class, 'index'])->name('product.seller.index');
-            Route::get('seller/product/new', [SellerProductController::class, 'new'])->name('product.seller.new');
-            Route::get('seller/product/published', [SellerProductController::class, 'approved'])->name('product.seller.approved');
+        Route::get('seller/product/list', [SellerProductController::class, 'index'])->name('product.seller.index');
+        Route::get('seller/product/create', [SellerProductController::class, 'create'])->name('product.seller.create');
+        Route::get('seller/product/new', [SellerProductController::class, 'new'])->name('product.seller.new');
+        Route::get('seller/product/published', [SellerProductController::class, 'approved'])->name('product.seller.approved');
             Route::get('seller/product/refuse', [SellerProductController::class, 'refuse'])->name('product.seller.refuse');
             Route::get('seller/product/trashed', [SellerProductController::class, 'trashed'])->name('product.seller.trashed');
             Route::post('seller/product/delete', [SellerProductController::class, 'delete'])->name('product.seller.delete');
@@ -254,12 +256,15 @@ Route::prefix('/admin')->name('admin.')->middleware($globalMiddleware)->group(fu
             Route::post('seller/product/cancelBy', [SellerProductController::class, 'cancelBy'])->name('product.seller.cancelby');
             Route::post('seller/product/restore', [SellerProductController::class, 'restore'])->name('product.seller.restore');
             Route::get('seller/product/details/{id}', [SellerProductController::class, 'details'])->name('product.seller.details');
+            Route::get('seller/product/edit/{id}', [SellerProductController::class, 'edit'])->name('product.seller.edit');
+            Route::post('seller/product/update/{id}', [SellerProductController::class, 'update'])->name('product.seller.update');
+            Route::get('seller/product/gallery/image/delete/{id}', [SellerProductController::class, 'productGalleryImageDelete'])->name('product.seller.gallery.image.delete');
 
             Route::get('seller/product/search/{scope}', [SellerProductController::class, 'search'])->name('product.seller.search');
             Route::get('seller/product/all/order/{id}', [SellerProductController::class, 'singleProductAllOrder'])->name('product.seller.all.order');
             Route::get('seller/product/placed/order/{id}', [SellerProductController::class, 'singleProductPlacedOrder'])->name('product.seller.placed.order');
             Route::get('seller/product/delivered/order/{id}', [SellerProductController::class, 'singleProductDeliveredOrder'])->name('product.seller.delivered.order');
-            Route::post('seller/product/update/status', [SellerProductController::class, 'sellerProductUpdateStatus'])->name('product.seller.update.status');
+            Route::match(['get', 'post'], 'seller/product/update/status', [SellerProductController::class, 'sellerProductUpdateStatus'])->name('product.seller.update.status');
         });
 
 

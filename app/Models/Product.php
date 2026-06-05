@@ -287,6 +287,15 @@ class Product extends Model
         return $this->belongsTo(Seller::class, 'seller_id');
     }
 
+    /**
+     * Seller price submissions for this product.
+     *
+     * @return HasMany
+     */
+    public function sellerPriceOffers() :HasMany {
+        return $this->hasMany(ProductSellerPrice::class, 'product_id');
+    }
+
 
 
 

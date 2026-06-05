@@ -30,6 +30,17 @@
                         </div>
                     </div>
 
+                    @if(permission_check('create_product'))
+                        <div class="col-sm-auto">
+                            <div class="d-flex flex-wrap align-items-start gap-2">
+                                <a href="{{route('admin.product.seller.create')}}" class="btn btn-success btn-sm w-100 waves ripple-light">
+                                    <i class="ri-add-line me-1 align-bottom"></i>
+                                    {{translate('Create')}}
+                                </a>
+                            </div>
+                        </div>
+                    @endif
+
                 </div>
             </div>
 
@@ -212,6 +223,9 @@
                                                 <a href="{{route('admin.product.seller.details', $product->id)}}" class="fs-18 link-info" data-bs-toggle="tooltip" data-bs-placement="top" title="{{translate('Product Details')}}">
                                                     <i class="las la-redo"></i>
                                                 </a>
+                                                <a href="{{ route('admin.product.seller.edit', $product->id) }}" class="fs-18 link-primary" data-bs-toggle="tooltip" data-bs-placement="top" title="{{translate('Edit product fields')}}">
+                                                    <i class="las la-edit"></i>
+                                                </a>
                                             @endif
 
                                        
@@ -233,10 +247,6 @@
                                                 </a>
                                             @endif
                                             @if(!request()->routeIs('admin.product.seller.trashed'))
-                                        
-                                                <a href="javascript:void(0)" class="fs-18 link-success ms-2 seller_status_edit" data-bs-toggle="tooltip" data-bs-placement="top" title="{{translate('Update')}}" data-bs-toggle="modal" data-id="{{$product->id}}" data-status="{{$product->status}}"    data-bs-target="#seller_status_edit">
-                                                    <i class="las la-pen"></i>
-                                                </a>
                                                 <a href="javascript:void(0)" class="fs-18 link-danger productdelete" data-bs-toggle="tooltip" data-bs-placement="top" title="{{translate('Product Delete')}}" data-id="{{$product->id}}" data-bs-toggle="modal" data-bs-target="#delete">
                                                     <i class="las la-trash"></i>
                                                 </a>
@@ -273,7 +283,7 @@
 <div class="modal fade" id="seller_status_edit" tabindex="-1" aria-labelledby="seller_status_edit" aria-hidden="true" >
     <div class="modal-dialog">
         <div class="modal-content">
-        	<form action="{{route('admin.product.seller.update.status')}}" method="POST">
+        	<form action="{{ request()->root() . route('admin.product.seller.update.status', [], false) }}" method="POST">
         		@csrf
         		<input type="hidden" name="id">
 	            <div class="modal-body">

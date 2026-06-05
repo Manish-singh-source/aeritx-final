@@ -12,7 +12,6 @@ use App\Http\Requests\DigitalProductRequest;
 use App\Http\Requests\DigitalProductUpdateRequest;
 use App\Models\Cart;
 use App\Models\DigitalProductAttributeValue;
-use App\Models\PlanSubscription;
 use App\Models\Tax;
 use App\Rules\General\FileExtentionCheckRule;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -51,6 +50,8 @@ class DigitalProductController extends Controller
 
     public function create()
     {
+        return redirect()->route('seller.dashboard')->with('error', translate('You do not have permission to add a new product'));
+
         $title      = translate('Add new digital product');
         $categories = Category::where('status', '1')->with('parent')->select('id', 'name')->get();
         $taxes = Tax::active()->get();
@@ -59,14 +60,8 @@ class DigitalProductController extends Controller
 
     public function store(DigitalProductRequest $request)
     {
+        return redirect()->route('seller.dashboard')->with('error', translate('You do not have permission to add a new product'));
 
-        $subscription = PlanSubscription::where('seller_id',Auth::guard('seller')->user()->id)->where('status',1)->first();
-        if(!$subscription){
-           return back()->with('error',translate('You dont have any runnig subscription'));
-        }
-        if($subscription->total_product < 1 ){
-            return back()->with('error',translate('You dont have enough product balance to add a new product'));
-        }
         $featuredImage = null;
 
         if($request->hasFile('featured_image')){

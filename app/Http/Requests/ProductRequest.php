@@ -26,16 +26,38 @@ class ProductRequest extends FormRequest
      */
     public function rules()
     {
+        $adminInhouseCreate = $this->routeIs('admin.item.product.inhouse.store');
+        $priceRule = 'nullable|numeric|gt:0';
 
-       
+        $sellerIds = array_filter((array) $this->input('seller_ids', []));
+
+        if (
+            $this->routeIs('seller.product.store')
+            || (
+                ! $adminInhouseCreate
+                && (
+                    ($this->input('seller_id') !== null && $this->input('seller_id') !== '')
+                    || count($sellerIds) > 0
+                )
+            )
+        ) {
+            $priceRule = 'required|numeric|gt:0';
+        }
+
+        $pointRule = $adminInhouseCreate ? 'nullable|numeric|gt:-1|max:2000000' : 'required|numeric|gt:-1|max:2000000';
+        $shippingFeeRule = $adminInhouseCreate ? 'nullable|numeric|gt:-1' : 'required|numeric|gt:-1';
+        $sellerRule = $adminInhouseCreate && count($sellerIds) > 0 ? 'required|array|min:1' : 'nullable|array|min:1';
 
        return [
             'name' => 'required|max:255',
             'slug'    => 'required|max:191',
-            'price' => 'required|numeric|gt:0',
-            'point' => 'required|numeric|gt:-1|max:2000000',
+            'price' => $priceRule,
+            'hsn' => 'nullable|numeric|min:0',
+            'seller_ids' => $sellerRule,
+            'seller_ids.*' => 'nullable|exists:sellers,id',
+            'point' => $pointRule,
             'weight' => 'nullable|numeric|gt:-1',
-            'shipping_fee' => 'required|numeric|gt:-1',
+            'shipping_fee' => $shippingFeeRule,
             'discount_percentage' => 'nullable|numeric|gt:-1',
             'minimum_purchase_qty' => 'required|integer|min:1',
             'maximum_purchase_qty' => 'required|integer|min:1',
@@ -43,6 +65,7 @@ class ProductRequest extends FormRequest
             'subcategory_id' => 'nullable|exists:categories,id',
             'short_description' => 'required',
             'description' => 'required',
+            'warranty_policy' => 'nullable|string',
             'featured_image' => ['required',new FileExtentionCheckRule(file_format())],
             'gallery_image.*' => ['required',new FileExtentionCheckRule(file_format())],
             'meta_title' => 'nullable|max:250',
@@ -66,6 +89,7 @@ class ProductRequest extends FormRequest
        return [
             'name.required' => 'Product title is required',
             'price.required' => 'Product Regular price is required',
+            'hsn.numeric' => 'HSN must be a valid number',
             'minimum_purchase_qty.required' => 'Minimum Purchase Quantity is Required',
             'maximum_purchase_qty.required' => 'Maximum Purchase Quantity is Required',
             'category_id.required' => 'Category is required',

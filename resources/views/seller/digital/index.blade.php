@@ -1,15 +1,6 @@
 @extends('seller.layouts.app')
 @section('main_content')
 <div class="page-content">
-    @php
-  		$totalProducts = ((Auth::guard('seller')->user()->product))->count();
-		$subscription = Auth::guard('seller')->user()->subscription->where('status',1)->first();
-        $totalSubscriptionProducts = 0;
-		if($subscription){
-            $totalSubscriptionProducts = @$subscription->total_product ?? 0;
-		}
-
-    @endphp
     <div class="container-fluid">
 
         <div class="page-title-box d-sm-flex align-items-center justify-content-between">
@@ -36,14 +27,6 @@
                             <h5 class="card-title mb-0">
                                 {{translate('Digital Product List')}}
                             </h5>
-                        </div>
-                    </div>
-                    <div class="col-sm-auto">
-                        <div class="d-flex flex-wrap align-items-start gap-2">
-                            <a href="javascript:void(0)" id="product-create" class="btn btn-success btn-sm add-btn waves ripple-light">
-                                <i class="ri-add-line align-bottom me-1"></i>
-                                    {{translate('Add New Product')}}
-                            </a>
                         </div>
                     </div>
                 </div>
@@ -252,15 +235,6 @@
 			modal.find('input[name=id]').val($(this).data('id'));
 			modal.modal('show');
 		});
-
-        $("#product-create").click(function(){
-            if({{$totalSubscriptionProducts }} < 1)
-            {
-				toaster('Renew Your Subsription Plan Or Buy A New Plan','danger')
-            } else{
-                window.location = "{{route('seller.digital.product.create')}}"
-            }
-        });
 
         $(".seller_status_edit").on("click", function(){
 			var modal = $("#seller_status_edit");

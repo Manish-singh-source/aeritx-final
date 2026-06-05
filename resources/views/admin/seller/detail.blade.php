@@ -66,6 +66,27 @@
 
                                 <li class="d-flex justify-content-between align-items-center flex-wrap gap-2  list-group-item">
                                     <span class="fw-semibold">
+                                        {{translate('GST Number (GSTIN)')}}
+                                    </span>
+                                    <span class="font-weight-bold">{{$seller->gst_number ?: 'N/A'}}</span>
+                                </li>
+
+                                <li class="d-flex justify-content-between align-items-center flex-wrap gap-2  list-group-item">
+                                    <span class="fw-semibold">
+                                        {{translate('Aadhar Card')}}
+                                    </span>
+                                    <span class="font-weight-bold">{{$seller->aadhar_card ?: 'N/A'}}</span>
+                                </li>
+
+                                <li class="d-flex justify-content-between align-items-center flex-wrap gap-2  list-group-item">
+                                    <span class="fw-semibold">
+                                        {{translate('PAN Card')}}
+                                    </span>
+                                    <span class="font-weight-bold">{{$seller->pan_card ?: 'N/A'}}</span>
+                                </li>
+
+                                <li class="d-flex justify-content-between align-items-center flex-wrap gap-2  list-group-item">
+                                    <span class="fw-semibold">
                                         {{translate('Status')}}
                                     </span>
 
@@ -331,6 +352,28 @@
 								<form action="{{route('admin.seller.info.details.update', $seller->id)}}" method="POST" enctype="multipart/form-data">
 									@csrf
 									<div class="row g-3">
+										<div class="col-12">
+											<div class="border rounded-3 p-3 bg-light">
+												<h6 class="fw-bold mb-3">{{translate('Tax Identity Details')}}</h6>
+												<div class="row g-3">
+													<div class="col-xxl-4 col-xl-6">
+														<label for="gst_number" class="form-label">{{translate('GST Number (GSTIN)')}}</label>
+														<input type="text" name="gst_number" id="gst_number" class="form-control" value="{{old('gst_number', $seller->gst_number)}}" placeholder="{{translate('Enter GST Number')}}">
+													</div>
+
+													<div class="col-xxl-4 col-xl-6">
+														<label for="aadhar_card" class="form-label">{{translate('Aadhar Card')}}</label>
+														<input type="text" name="aadhar_card" id="aadhar_card" class="form-control" value="{{old('aadhar_card', $seller->aadhar_card)}}" placeholder="{{translate('Enter Aadhar Card Number')}}">
+													</div>
+
+													<div class="col-xxl-4 col-xl-6">
+														<label for="pan_card" class="form-label">{{translate('PAN Card')}}</label>
+														<input type="text" name="pan_card" id="pan_card" class="form-control" value="{{old('pan_card', $seller->pan_card)}}" placeholder="{{translate('Enter PAN Card Number')}}">
+													</div>
+												</div>
+											</div>
+										</div>
+
 										<div class="col-xxl-4 col-xl-6">
 											<label for="name" class="form-label">{{translate('Name')}} <span class="text-danger">*</span></label>
 											<input type="text" name="name" id="name" class="form-control" value="{{@$seller->name}}" required>

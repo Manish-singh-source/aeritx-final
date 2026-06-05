@@ -1,18 +1,6 @@
 @extends('seller.layouts.app')
 @section('main_content')
 
-	@php
-		$totalProducts = ((Auth::guard('seller')->user()->product))->count();
-		$subscription = Auth::guard('seller')->user()->subscription->where('status',1)->first();
-     
-        $totalSubscriptionProducts = 0;
-		if($subscription){
-			$totalSubscriptionProducts = @$subscription->total_product ?? 0;
-		}
-
-
-	@endphp
-
 	<div class="page-content">
 		<div class="container-fluid">
 
@@ -41,14 +29,6 @@
                             </h5>
                         </div>
 
-                        <div class="col-sm-auto">
-                            <div class="d-flex flex-wrap align-items-start gap-2">
-                                <a id="product-create" href="javascript:void(0)" class="btn btn-success waves ripple-light"> <i
-                                        class="ri-add-line me-1 align-bottom"></i>
-                                    {{translate('Create')}}
-                                </a>
-                            </div>
-                        </div>
                     </div>
                 </div>
 
@@ -131,6 +111,16 @@
 
                             <tbody>
                                 @forelse($products as $product)
+                                    @php
+                                        $sellerAssignment = $product->sellerPriceOffers->first();
+                                        $isAssignedProduct = (int) $product->seller_id !== (int) auth()->guard('seller')->id();
+                                        $displayPrice = $sellerAssignment && !is_null($sellerAssignment->seller_price)
+                                            ? $sellerAssignment->seller_price
+                                            : $product->price;
+                                        $displayQuantity = $sellerAssignment
+                                            ? $sellerAssignment->quantity
+                                            : null;
+                                    @endphp
                                     <tr>
                                         <td>
                                             <div class="d-flex align-items-center">
@@ -140,7 +130,10 @@
                                                 </div>
                                                 <div class="flex-grow-1">
                                                   {{$product->name}}
-
+                                                  @if($isAssignedProduct)
+                                                    <br>
+                                                    {{-- <span class="badge bg-primary">{{ translate('Assigned Product') }}</span> --}}
+                                                  @endif
                                                 </div>
                                             </div>
                                         </td>
@@ -154,7 +147,10 @@
                                         </td>
 
                                         <td data-label="{{translate('Info')}}">
-                                            <span>{{translate('Regular Price')}} :{{(short_amount($product->price))}} {{translate('Discount Price')}} : {{(short_amount($product->discount))}}</span>
+                                            <span>{{translate('Regular Price')}} : {{ short_amount($displayPrice) }}</span><br>
+                                            @if(!is_null($displayQuantity))
+                                                <br><span>{{translate('Quantity')}} : {{ $displayQuantity }}</span>
+                                            @endif
 
                                         </td>
 
@@ -174,13 +170,13 @@
                                         <td>
                                             <div class="hstack justify-content-center gap-3">
                                                 
-                                                @if(request()->routeIs('seller.product.trashed'))
+                                                 @if(request()->routeIs('seller.product.trashed'))
                                                     <a href="javascript:void(0)" data-bs-toggle="tooltip" data-bs-placement="top"  title="Restore Product"  class="link-success fs-18  productdeleterestore" data-bs-toggle="modal" data-id="{{$product->id}}" data-bs-target="#trashrestore"><i class="las la-undo-alt"></i></a>
 
                                                     <a href="javascript:void(0)" data-bs-toggle="tooltip" data-bs-placement="top"  title="Delete Product" class="link-danger fs-18  productparmanentdelete" data-bs-toggle="modal" data-id="{{$product->id}}" data-bs-target="#permanentDelete"><i class="las la-trash"></i></a>
-                                                @else
+                                                 @else
 
-                                                   @if( site_settings('seller_product_status_update_permission') ==  App\Enums\StatusEnum::true->status()  &&  ($product->status == 1 || $product->status == 2))
+                                                   @if(!$isAssignedProduct && site_settings('seller_product_status_update_permission') ==  App\Enums\StatusEnum::true->status()  &&  ($product->status == 1 || $product->status == 2))
 
                                                         <a href="javascript:void(0)" class="fs-18 link-success ms-2 seller_status_edit" data-bs-toggle="tooltip" data-bs-placement="top" title="{{translate('Status Update')}}" data-bs-toggle="modal" data-id="{{$product->id}}" data-status="{{$product->status}}"    data-bs-target="#seller_status_edit">
                                                             <i class="las la-pen"></i>
@@ -197,9 +193,11 @@
 
                                                     <a href="{{route('seller.product.edit',[$slug , $product->id])}}" class="link-warning fs-18" data-bs-toggle="tooltip" data-bs-placement="top" title="Product Update"><i class="las la-pen"></i></a>
 
-                                                    <a href="javascript:void(0)" data-bs-toggle="tooltip" data-bs-placement="top" class="link-danger fs-18 productdelete" title="Product Delete" data-bs-toggle="modal" data-id="{{$product->id}}" data-bs-target="#delete">
-                                                        <i class="las la-trash"></i>
-                                                    </a>
+                                                    @if(!$isAssignedProduct)
+                                                        <a href="javascript:void(0)" data-bs-toggle="tooltip" data-bs-placement="top" class="link-danger fs-18 productdelete" title="Product Delete" data-bs-toggle="modal" data-id="{{$product->id}}" data-bs-target="#delete">
+                                                            <i class="las la-trash"></i>
+                                                        </a>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </td>
@@ -368,18 +366,6 @@
 			modal.find('input[name=id]').val($(this).data('id'));
 			modal.modal('show');
 		});
-
-        $("#product-create").click(function(){
-    
-            if({{$totalSubscriptionProducts }} < 1)
-            {
-                toaster("{{translate('Renew Your Subsription Plan Or Buy A New Plan')}}",'danger')
-            } else{
-                window.location = "{{route('seller.product.create')}}"
-            }
-        });
-
-
         $(".seller_status_edit").on("click", function(){
 			var modal = $("#seller_status_edit");
 			const status = $(this).attr('data-status');

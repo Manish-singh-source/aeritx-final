@@ -21,6 +21,7 @@ use App\Models\AttributeValue;
 use App\Models\Cart;
 use App\Models\DigitalProductAttributeValue;
 use App\Models\PlanSubscription;
+use App\Models\ProductSellerPrice;
 use App\Models\Tax;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Str;
@@ -33,20 +34,91 @@ class ProductController extends Controller
         $this->middleware('sellercheckstatus');
     }
 
+    protected function accessibleSellerProductsQuery($seller)
+    {
+        return Product::sellerProduct()
+            ->where(function ($query) use ($seller) {
+                $query->where('seller_id', $seller->id)
+                    ->orWhereHas('sellerPriceOffers', function ($sellerPriceQuery) use ($seller) {
+                        $sellerPriceQuery->where('seller_id', $seller->id);
+                    });
+            });
+    }
+
     public function index()
     {
         $title = translate('Manage product');
         $seller = Auth::guard('seller')->user();
-        $products = Product::search()->sellerProduct()->physical()->where('seller_id', $seller->id)->orderBy('id', 'DESC')->with('category', 'brand', 'subCategory', 'order')->paginate(site_settings('pagination_number',10));
+        $products = $this->accessibleSellerProductsQuery($seller)
+            ->search()
+            ->physical()
+            ->with([
+                'category',
+                'brand',
+                'subCategory',
+                'order',
+                'sellerPriceOffers' => function ($query) use ($seller) {
+                    $query->where('seller_id', $seller->id);
+                },
+            ])
+            ->orderBy('id', 'DESC')
+            ->paginate(site_settings('pagination_number',10));
 
         return view('seller.product.index', compact('title', 'products'));
+    }
+
+    public function assignedProducts()
+    {
+        $seller = Auth::guard('seller')->user();
+        $title = translate('Assigned products');
+        $assignments = ProductSellerPrice::with(['product.category', 'product.brand'])
+            ->where('seller_id', $seller->id)
+            ->latest()
+            ->paginate(site_settings('pagination_number', 10));
+
+        return view('seller.product.assigned', compact('title', 'assignments'));
+    }
+
+    public function updateAssignedPrice(Request $request, $id)
+    {
+        $request->validate([
+            'seller_price' => ['required', 'numeric', 'gt:0'],
+            'quantity' => ['required', 'integer', 'gt:-1'],
+        ]);
+
+        $seller = Auth::guard('seller')->user();
+        $assignment = ProductSellerPrice::with('product')
+            ->where('id', $id)
+            ->where('seller_id', $seller->id)
+            ->firstOrFail();
+
+        $assignment->seller_price = $request->seller_price;
+        $assignment->quantity = $request->quantity;
+        $assignment->submitted_at = now();
+        $assignment->save();
+
+        return back()->with('success', translate('Product price has been updated successfully'));
     }
 
     public function approved()
     {
         $title = translate('Manage product');
         $seller = Auth::guard('seller')->user();
-        $products = Product::search()->sellerProduct()->physical()->published()->where('seller_id', $seller->id)->orderBy('id', 'DESC')->with('category', 'brand', 'subCategory', 'order')->paginate(site_settings('pagination_number',10));
+        $products = $this->accessibleSellerProductsQuery($seller)
+            ->search()
+            ->physical()
+            ->published()
+            ->with([
+                'category',
+                'brand',
+                'subCategory',
+                'order',
+                'sellerPriceOffers' => function ($query) use ($seller) {
+                    $query->where('seller_id', $seller->id);
+                },
+            ])
+            ->orderBy('id', 'DESC')
+            ->paginate(site_settings('pagination_number',10));
         return view('seller.product.index', compact('title', 'products'));
     }
 
@@ -54,7 +126,21 @@ class ProductController extends Controller
     {
         $title = translate('Manage product');
         $seller = Auth::guard('seller')->user();
-        $products = Product::search()->sellerProduct()->physical()->inactive()->where('seller_id', $seller->id)->orderBy('id', 'DESC')->with(['category', 'brand', 'subCategory', 'order'])->paginate(site_settings('pagination_number',10));
+        $products = $this->accessibleSellerProductsQuery($seller)
+            ->search()
+            ->physical()
+            ->inactive()
+            ->with([
+                'category',
+                'brand',
+                'subCategory',
+                'order',
+                'sellerPriceOffers' => function ($query) use ($seller) {
+                    $query->where('seller_id', $seller->id);
+                },
+            ])
+            ->orderBy('id', 'DESC')
+            ->paginate(site_settings('pagination_number',10));
         return view('seller.product.index', compact('title', 'products'));
     }
 
@@ -62,12 +148,26 @@ class ProductController extends Controller
     {
         $title = translate('Manage product');
         $seller = Auth::guard('seller')->user();
-        $products = Product::with(['order'])->search()->sellerProduct()->onlyTrashed()->where('seller_id', $seller->id)->orderBy('id', 'DESC')->with('category', 'brand', 'subCategory')->paginate(site_settings('pagination_number',10));
+        $products = Product::with(['order'])
+            ->search()
+            ->sellerProduct()
+            ->onlyTrashed()
+            ->where('seller_id', $seller->id)
+            ->orderBy('id', 'DESC')
+            ->with('category', 'brand', 'subCategory')
+            ->paginate(site_settings('pagination_number',10));
         return view('seller.product.index', compact('title', 'products'));
     }
 
     public function create()
     {
+        $seller = Auth::guard('seller')->user();
+        $subscription = PlanSubscription::where('seller_id', $seller->id)->where('status', 1)->first();
+
+        if (! $subscription || ($subscription->total_product ?? 0) < 1) {
+            return redirect()->route('seller.dashboard')->with('error', translate('You do not have permission to add a new product'));
+        }
+
         $attributes = Attribute::with('value')->get();
         $title = translate('Add new physical product');
         $brands = Brand::where('status', '1')->select('id', 'name')->get();
@@ -79,12 +179,11 @@ class ProductController extends Controller
 
     public function store(ProductRequest $request)
     {
-       $subscription = PlanSubscription::where('seller_id',Auth::guard('seller')->user()->id)->where('status',1)->first();
-       if(!$subscription){
-          return back()->with('error',translate('You dont have any runnig subscription'));
-       }
-       if($subscription->total_product < 1 ){
-           return back()->with('error',translate('You dont have enough product balance to add a new product'));
+       $seller = Auth::guard('seller')->user();
+       $subscription = PlanSubscription::where('seller_id', $seller->id)->where('status', 1)->first();
+
+       if (! $subscription || ($subscription->total_product ?? 0) < 1) {
+          return redirect()->route('seller.dashboard')->with('error', translate('You do not have permission to add a new product'));
        }
 
        $featuredImage = null;
@@ -97,7 +196,6 @@ class ProductController extends Controller
 
             }
         }
-        $seller = Auth::guard('seller')->user();
         $product = Product::create([
             'name'=> $request->name,
             'slug'=> make_slug($request->slug),
@@ -226,7 +324,19 @@ class ProductController extends Controller
     {
         $title = translate('Product details');
         $seller = Auth::guard('seller')->user();
-        $product = Product::with(['rating', 'rating.customer','shippingDelivery','shippingDelivery.shippingDelivery'])->sellerProduct()->physical()->where('seller_id', $seller->id)->where('id', $id)->firstOrFail();
+        $product = $this->accessibleSellerProductsQuery($seller)
+            ->with([
+                'rating',
+                'rating.customer',
+                'shippingDelivery',
+                'shippingDelivery.shippingDelivery',
+                'sellerPriceOffers' => function ($query) use ($seller) {
+                    $query->where('seller_id', $seller->id);
+                },
+            ])
+            ->physical()
+            ->where('id', $id)
+            ->firstOrFail();
         return view('seller.product.details', compact('title', 'product'));
     }
 
@@ -257,151 +367,51 @@ class ProductController extends Controller
     {
         $title = translate('Product update');
         $seller = Auth::guard('seller')->user();
-        $taxes = Tax::active()->get();
-        $brands = Brand::where('status', '1')->select('id', 'name')->get();
-        $shippingDeliveries = ShippingDelivery::get(['name','id']);
-        $categories = Category::where('status', '1')->select('id', 'name')->with('parent')->get();
-        $product = Product::sellerProduct()->physical()->where('seller_id', $seller->id)->where('id', $id)->firstOrFail();
+        $product = $this->accessibleSellerProductsQuery($seller)
+            ->physical()
+            ->where('id', $id)
+            ->firstOrFail();
+        $sellerPriceOffer = ProductSellerPrice::firstOrCreate(
+            [
+                'product_id' => $product->id,
+                'seller_id' => $seller->id,
+            ],
+            [
+                'assigned_by' => $product->seller_id === $seller->id ? $seller->id : null,
+                'quantity' => 0,
+            ]
+        );
 
-        $taxes = Tax::with(['products'=> function(BelongsToMany $q) use($product) :BelongsToMany{
-            return $q->where('product_id', $product->id);
-        }])->active()->get();
-        return view('seller.product.edit', compact('title', 'categories', 'brands', 'shippingDeliveries', 'product','taxes'));
+        return view('seller.product.edit', compact('title', 'product', 'sellerPriceOffer'));
     }
 
     public function update(ProductUpdateRequest $request, $id)
     {
-
-
         $seller = Auth::guard('seller')->user();
-        $product = Product::sellerProduct()->physical()->where('seller_id', $seller->id)->where('id', $id)->firstOrFail();
-        $featuredImage = $product->featured_image;
+        $product = $this->accessibleSellerProductsQuery($seller)
+            ->physical()
+            ->where('id', $id)
+            ->firstOrFail();
 
-        if($request->hasFile('featured_image')){
-            try {
-                $featuredImage = store_file($request->featured_image,file_path()['product']['featured']['path'],file_path()['product']['featured']['size'], $featuredImage);
-            }catch (\Exception $exp){
-
-            }
-        }
-        $product->update([
-            'name'=> $request->name,
-            'slug'=> make_slug($request->slug),
-            'seller_id' => $seller->id,
-            'product_type' => Product::PHYSICAL,
-            'price'=> $request->price,
-            'point'=> ($request->point),
-            'hsn'=> $request->hsn,
-            'weight'=> $request->input('weight',0),
-            'shipping_fee'=> $request->shipping_fee,
-            'shipping_fee_multiply'=> $request->shipping_fee_multiply ?  $request->shipping_fee_multiply : 0,
-            'discount'=> $request->discount_percentage ? $request->price - ($request->price * $request->discount_percentage / 100) : null,
-            'discount_percentage'=> $request->discount_percentage ?? null,
-            'minimum_purchase_qty'=> $request->minimum_purchase_qty,
-            'maximum_purchase_qty'=> $request->maximum_purchase_qty,
-            'brand_id'=> $request->brand_id,
-            'category_id'=> $request->category_id,
-            'sub_category_id'=> $request->subcategory_id,
-            'short_description'=> build_dom_document( $request->short_description,'seller_short_descripiton_edit'.rand(10,1000)),
-            'description'=> build_dom_document($request->description,'seller_descripiton_edit'.rand(10,1000)),
-            'shipping_country'=> $request->shipping_country,
-            'featured_image'=> $featuredImage,
-            'meta_title'=> $request->meta_title,
-            'meta_keywords'=> $request->meta_keywords ?? null,
-            'meta_description'=> $request->meta_description,
-            'warranty_policy'=> $request->warranty_policy,
-            'meta_image'=> $featuredImage,
-            'status'=> Product::NEW,
-        ]);
-
-
-        #STORE TAXES
-        if($request->input('tax_id') && is_array($request->input('tax_id'))){
-
-            $taxes = [];
-            $taxAmounts  = $request->input('tax_amount');
-            $taxTypes    = $request->input('tax_type');
-            foreach($request->input('tax_id') as $index => $taxId){
-                $val['product_id'] =   $product->id;
-                $val['tax_id']     =   $taxId;
-                $val['amount']     =   @$taxAmounts[$index] ?? 0;
-                $val['type']     =   @$taxTypes[$index] ?? 0;
-                array_push($taxes,$val);
-            }
-
-            $product->taxes()->detach();
-            $product->taxes()->attach($taxes);
+        if ((int) $product->seller_id === (int) $seller->id) {
+            $product->update([
+                'price'=> $request->price,
+                'status'=> Product::NEW,
+            ]);
         }
 
-
-        if($request->hasFile('gallery_image')){
-            $galleryImage = array_filter($request->gallery_image);
-            ProductGallery::imageStore($request, $galleryImage, $product->id);
-        }
-
-        ProductShippingDelivery::where('product_id',$product->id)->delete();
-
-        if($request->shipping_delivery_id){
-            if($request->shipping_delivery_id[0] == 0){
-                $shippingDeliveries = ShippingDelivery::pluck('id');
-
-                foreach($shippingDeliveries as $value){
-                    ProductShippingDelivery::create([
-                        'product_id' => $product->id,
-                        'shipping_delivery_id' => $value
-                    ]);
-                }
-            }
-            else{
-                foreach($request->shipping_delivery_id as $value){
-                    ProductShippingDelivery::create([
-                        'product_id' => $product->id,
-                        'shipping_delivery_id' => $value
-                    ]);
-                }
-            }
-        }
-
-        $collection = collect( $request);
-
-
-        $choice_options = array();
-        if (isset($collection['choice_no']) && $collection['choice_no']) {
-            $str = '';
-            $item = array();
-            foreach ($collection['choice_no'] as $key => $no) {
-                $str = 'choice_options_' . $no;
-                $item['attribute_id'] = $no;
-                $attribute_data = array();
-                foreach ($collection[$str] as $key => $eachValue) {
-                    array_push($attribute_data, $eachValue);
-                }
-                unset($collection[$str]);
-
-                $item['values'] = $attribute_data;
-                array_push($choice_options, $item);
-            }
-        }
-        $choice_options = json_encode($choice_options, JSON_UNESCAPED_UNICODE);
-        if (isset($collection['choice_no']) && $collection['choice_no']) {
-            $attributes = json_encode($collection['choice_no']);
-            unset($collection['choice_no']);
-        } else {
-            $attributes = json_encode(array());
-        }
-        $product->attributes_value =   $choice_options;
-        $product->attributes =   $attributes;
-        $product->save();
-        foreach ($product->stock as $key => $stock) {
-            $stock->delete();
-        }
-
-        $this->stockStore($request->only([
-            'choice_no','product_id'
-        ]), $product);
-
-
-
+        ProductSellerPrice::updateOrCreate(
+            [
+                'product_id' => $product->id,
+                'seller_id' => $seller->id,
+            ],
+            [
+                'seller_price' => $request->price,
+                'quantity' => (int) $request->quantity,
+                'assigned_by' => $product->seller_id === $seller->id ? $product->seller_id : null,
+                'submitted_at' => now(),
+            ]
+        );
 
         return back()->with('success', translate("Product has been updated"));
 
@@ -525,7 +535,16 @@ class ProductController extends Controller
         $search = $request->searchFilter;
         $title = "Search by -" . $search;
         $seller = Auth::guard('seller')->user();
-        $products=Product::with(['category', 'order'])->sellerProduct()->physical()->where('seller_id', $seller->id);
+        $products = $this->accessibleSellerProductsQuery($seller)
+            ->with([
+                'category',
+                'order',
+                'brand',
+                'sellerPriceOffers' => function ($query) use ($seller) {
+                    $query->where('seller_id', $seller->id);
+                },
+            ])
+            ->physical();
 
         if($request->option_value == 'product_name'){
             $products->Where('name', 'like', "%$search%");

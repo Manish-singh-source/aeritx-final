@@ -75,6 +75,12 @@ $sellerOrderCount = App\Models\Order::sellerOrder()->placed()->physicalOrder()->
                             </li>
 
                             <li class="nav-item">
+                                <a href="{{route('seller.product.assigned')}}" class='{{request()->routeIs("seller.product.assigned")?"active" :"" }}  nav-link'>
+                                    {{translate("Assigned Products")}}
+                                </a>
+                            </li>
+
+                            <li class="nav-item">
                                 <a href="{{route('seller.digital.product.index')}}" class='{{request()->routeIs("seller.digital.product.*")?"active" :"" }}  nav-link'>
                                     {{translate("digital Products")}}
                                 </a>
