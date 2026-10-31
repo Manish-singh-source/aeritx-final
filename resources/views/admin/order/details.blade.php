@@ -668,7 +668,7 @@
                         </div>
 
     
-                        <!-- <div class="mb-3">
+                        <div class="mb-3">
                             <label for="pickup_address"
                                 class="form-label">{{ translate('Pickup address') }} <span class="text-danger">*</span>
                             </label>
@@ -676,7 +676,7 @@
 
                             <textarea @if($order->status  == App\Models\Order::DELIVERED) readonly @endif name="pickup_address" class="form-control"  required  placeholder="{{translate('Enter pickup address')}}  "  id="note" cols="4" rows="4">{{@$deliveryData->pickup_location}}</textarea>
 
-                        </div> -->
+                        </div>
 
               
                         <div class="mb-3"

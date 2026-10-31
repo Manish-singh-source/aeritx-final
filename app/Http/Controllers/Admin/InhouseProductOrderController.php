@@ -509,7 +509,7 @@ class InhouseProductOrderController extends Controller
             'delivery_man_id'     => "required|exists:delivery_men,id",
             'delivery_man_charge' => "nullable|gt:-1|numeric",
             'note' => "nullable",
-            // 'pickup_address' => "required",
+            'pickup_address' => "required",
         ]);
 
 
