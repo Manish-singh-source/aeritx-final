@@ -21,7 +21,7 @@ class OrderDetailsCollection extends ResourceCollection
                 $model = is_object($item) && isset($item->resource) ? $item->resource : $item;
 
                 // only attempt to read relations when we have an object model
-                $shop = is_object($model) ? optional($model->product->seller->sellerShop) : null;
+                $shop = is_object($model) ? optional($model->product?->seller?->sellerShop) : null;
                 $sellerAddress = $shop ? $shop->only(['name','email','phone','address']) : null;
 
                 // convert item to array, passing the request to resources toArray

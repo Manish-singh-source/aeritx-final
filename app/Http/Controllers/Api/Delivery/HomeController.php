@@ -133,7 +133,7 @@ class HomeController extends Controller
                 'orderDetails',
                 'shipping',
                 'paymentMethod',
-                'orderDetails.product',
+                'orderDetails.product.seller.sellerShop',
                 'deliveryman',
                 'orderRatings',
                 'orderRatings.user',
@@ -165,7 +165,7 @@ class HomeController extends Controller
                 'orderDetails',
                 'shipping',
                 'paymentMethod',
-                'orderDetails.product',
+                'orderDetails.product.seller.sellerShop',
                 'deliveryman',
                 'orderRatings',
                 'orderRatings.user',
@@ -348,16 +348,14 @@ class HomeController extends Controller
                           'orderDetails',
                           'shipping',
                           'paymentMethod',
-                          'orderDetails.product',
+                          'orderDetails.product.seller.sellerShop',
                           'deliveryman',
                           'orderRatings',
                           'orderRatings.user',
                           'billingAddress.user',
                           'deliveryManOrder'
                           ])->whereHas('deliveryManOrder' , fn(Builder $query) :Builder => 
-                                         $query->where(fn(Builder $query) : Builder => $query
-                                             ->where('deliveryman_id',$this->deliveryman->id)
-                                              )->where('status','!=',DeliveryManOrder::PENDING))
+                                         $query->where('deliveryman_id', $this->deliveryman->id))
                                             ->physicalOrder()    
                                             ->when( $orderStatus && Arr::exists($delevaryStatuses,$orderStatus) , fn(Builder $q) => $q->where("status",Arr::get(   $delevaryStatuses,$orderStatus)))
                                             ->search()
@@ -419,7 +417,7 @@ class HomeController extends Controller
 
         $delevaryStatuses = Order::delevaryStatus();
 
-        $orders =  Order::with(['customer','orderStatus','log','orderDetails','shipping','paymentMethod','orderDetails.product','deliveryman','orderRatings','orderRatings.user','billingAddress.user'])
+        $orders =  Order::with(['customer','orderStatus','log','orderDetails','shipping','paymentMethod','orderDetails.product.seller.sellerShop','deliveryman','orderRatings','orderRatings.user','billingAddress.user'])
                                             ->whereHas('deliveryManOrder' , fn(Builder $query) :Builder => 
                                                         $query->where(fn(Builder $query) : Builder => $query
                                                           ->where('deliveryman_id',$this->deliveryman->id))
@@ -869,7 +867,7 @@ class HomeController extends Controller
 
 
         $validator = Validator::make($request->all(),[
-            'order_id'         => 'required|exists:orders,id',
+            'order_id'         => 'required',
             'delivery_man_id'  => 'required|exists:delivery_men,id',
             'note' => 'nullable',
             'pickup_location' => 'required'
@@ -893,7 +891,7 @@ class HomeController extends Controller
                                                  ->where('deliveryman_id',$this->deliveryman->id)
                                                   ->orWhere('assign_by',$this->deliveryman->id))
                                 ->whereIn('status',[DeliveryManOrder::PENDING , DeliveryManOrder::REJECTED]))
-                                ->where('id',$request->input('order_id'))
+                                ->where(fn(Builder $query): Builder => $this->whereOrderIdentifier($query, $request->input('order_id')))
                                 ->whereNotIn('status',[Order::DELIVERED,Order::CANCEL,Order::RETURN])
                                 ->first();
 
@@ -949,6 +947,9 @@ class HomeController extends Controller
 
         $deliverymanOrder->save();
 
+        $order->delivery_man_id = $deliveryman->id;
+        $order->save();
+
 
 
           # Send delivery man firebase notification
@@ -993,7 +994,7 @@ class HomeController extends Controller
 
 
         $validator = Validator::make($request->all(),[
-            'order_id'         => 'required|exists:orders,id',
+            'order_id'         => 'required',
             'status'           => 'required|in:'.DeliveryManOrder::ACCEPTED.",".DeliveryManOrder::REJECTED,
             'note'             => 'required'
         ]);
@@ -1008,7 +1009,7 @@ class HomeController extends Controller
                                             ->where('deliveryman_id',$this->deliveryman->id)
                                               ->orWhere('assign_by' ,$this->deliveryman->id))
                                                 ->whereIn('status',[DeliveryManOrder::PENDING ,DeliveryManOrder::REJECTED]))
-                                                ->where('id',$request->input('order_id'))
+                                                ->where(fn(Builder $query): Builder => $this->whereOrderIdentifier($query, $request->input('order_id')))
                                                 ->whereNotIn('status',[Order::DELIVERED,Order::CANCEL,Order::RETURN])
                                                 ->first();
 
@@ -1048,6 +1049,9 @@ class HomeController extends Controller
 
         $deliveryManOrder->save();
 
+        $order->delivery_man_id = $deliveryManOrder->deliveryman_id;
+        $order->save();
+
 
         return api(
             [
@@ -1068,7 +1072,7 @@ class HomeController extends Controller
 
 
         $validator = Validator::make($request->all(),[
-            'order_id'         => 'required|exists:orders,id',
+            'order_id'         => 'required',
             'status'           => 'required|in:'.DeliveryManOrder::DELIVERED.",".DeliveryManOrder::RETURN,
             'note'             => 'required'
         ]);
@@ -1081,7 +1085,7 @@ class HomeController extends Controller
                         $query->where(fn(Builder $query) : Builder => $query
                                     ->where('deliveryman_id',$this->deliveryman->id))
                                         ->where('status',DeliveryManOrder::ACCEPTED))
-                                        ->where('id',$request->input('order_id'))
+                                        ->where(fn(Builder $query): Builder => $this->whereOrderIdentifier($query, $request->input('order_id')))
                                         ->whereNotIn('status',[Order::DELIVERED,Order::CANCEL,Order::RETURN])
                                         ->first();
 
@@ -1174,24 +1178,28 @@ class HomeController extends Controller
 
 
 
-        $assignedOrders = DeliveryManOrder::with(['assignBy','deliveryMan','order'])
-                                            ->latest()
+        $assignedOrders = DeliveryManOrder::with([
+                                                'assignBy',
+                                                'deliveryMan',
+                                                'order.customer',
+                                                'order.orderStatus',
+                                                'order.log',
+                                                'order.orderDetails.product',
+                                                'order.shipping',
+                                                'order.paymentMethod',
+                                                'order.deliveryman',
+                                                'order.orderRatings.user',
+                                                'order.billingAddress.user',
+                                            ])
+                                            // This endpoint is the deliveryman's own assignment list.
+                                            // Do not include orders that this deliveryman merely assigned
+                                            // to somebody else (assign_by).
+                                            ->where('deliveryman_id', $this->deliveryman->id)
                                             ->date()
                                             ->filter()
-                                            ->when(request()->input('type') == 'me' , fn(Builder $q):Builder  =>
-                                                    $q->whereNotNull('deliveryman_id')
-                                                            ->where('assign_by',$this->deliveryman->id)
-                                                            ->where('deliveryman_id','!=',$this->deliveryman->id))
-                                            ->when(request()->input('type') == 'others' , fn(Builder $q):Builder =>
-                                                    $q->whereNotNull('assign_by')->where('deliveryman_id',$this->deliveryman->id))
-                                            ->when(!request()->input('type') , fn(Builder $q):Builder => 
-                                                    $q->whereNotNull('assign_by')
-                                                            ->whereNotNull('deliveryman_id')
-                                                            ->where(fn(Builder $q):Builder =>
-                                                                    $q->where('deliveryman_id' ,$this->deliveryman->id)
-                                                                            ->orWhere('assign_by',$this->deliveryman->id)))
+                                            ->orderByDesc('created_at')
+                                            ->orderByDesc('id')
                                             ->paginate(site_settings('pagination_number',10))
-                                            
                                             ->appends(request()->all());
 
 
@@ -1201,6 +1209,18 @@ class HomeController extends Controller
 
 
 
+    }
+
+
+    /**
+     * Match an order using the internal ID, public order number, or UID.
+     * Delivery app clients have historically used all three forms.
+     */
+    private function whereOrderIdentifier(Builder $query, mixed $identifier): Builder
+    {
+        return $query->where('id', $identifier)
+                     ->orWhere('order_id', $identifier)
+                     ->orWhere('uid', $identifier);
     }
 
 

@@ -213,6 +213,76 @@
 
                                 </div>
 
+                                <div class="card mb-4">
+                                    <div class="card-header border-0">
+                                        <div class="d-flex align-items-center">
+                                            <h4 class="card-title mb-0 flex-grow-1">
+                                                {{ translate('KYC Documents') }}
+                                            </h4>
+                                            <a href="{{ route('admin.report.kyc.log', ['delivery_man' => $deliveryman->id]) }}"
+                                                class="text-decoration-underline">
+                                                {{ translate('View All') }}
+                                            </a>
+                                        </div>
+                                    </div>
+
+                                    <div class="card-body">
+                                        @forelse($overview['kyc_logs'] as $kycLog)
+                                            <div class="border rounded p-3 {{ !$loop->last ? 'mb-3' : '' }}">
+                                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                                    <div>
+                                                        <span class="fw-semibold">{{ translate('Submitted') }}</span>
+                                                        <span class="text-muted ms-1">{{ get_date_time($kycLog->created_at) }}</span>
+                                                    </div>
+                                                    @if ($kycLog->status == App\Enums\KYCStatus::APPROVED->value)
+                                                        <span class="badge badge-soft-success">{{ translate('Approved') }}</span>
+                                                    @elseif ($kycLog->status == App\Enums\KYCStatus::REQUESTED->value)
+                                                        <span class="badge badge-soft-warning">{{ translate('Requested') }}</span>
+                                                    @elseif ($kycLog->status == App\Enums\KYCStatus::HOLD->value)
+                                                        <span class="badge badge-soft-info">{{ translate('Hold') }}</span>
+                                                    @else
+                                                        <span class="badge badge-soft-danger">{{ translate('Rejected') }}</span>
+                                                    @endif
+                                                </div>
+
+                                                @if ($kycLog->custom_data)
+                                                    <div class="row g-3">
+                                                        @foreach ($kycLog->custom_data as $key => $data)
+                                                            @if ($key === 'files')
+                                                                @foreach ($data as $fileKey => $file)
+                                                                    <div class="col-sm-6 col-lg-4">
+                                                                        <div class="small text-muted mb-1">{{ k2t($fileKey) }}</div>
+                                                                        <a href="{{ show_image(file_path()['seller_kyc']['path'] . '/' . $file) }}" target="_blank" rel="noopener">
+                                                                            <img src="{{ show_image(file_path()['seller_kyc']['path'] . '/' . $file) }}"
+                                                                                alt="{{ k2t($fileKey) }}" class="img-thumbnail"
+                                                                                style="height: 120px; object-fit: cover;">
+                                                                        </a>
+                                                                    </div>
+                                                                @endforeach
+                                                            @else
+                                                                <div class="col-sm-6">
+                                                                    <div class="small text-muted">{{ k2t($key) }}</div>
+                                                                    <div class="fw-semibold text-break">{{ $data }}</div>
+                                                                </div>
+                                                            @endif
+                                                        @endforeach
+                                                    </div>
+                                                @else
+                                                    <span class="text-muted">{{ translate('No documents submitted') }}</span>
+                                                @endif
+
+                                                <div class="text-end mt-3">
+                                                    <a href="{{ route('admin.report.kyc.log.show', $kycLog->id) }}" class="btn btn-sm btn-light">
+                                                        {{ translate('View Details') }}
+                                                    </a>
+                                                </div>
+                                            </div>
+                                        @empty
+                                            @include('admin.partials.not_found')
+                                        @endforelse
+                                    </div>
+                                </div>
+
                                 <div>
                                     <h6 class="fw-bold mb-3">{{ translate('Withdraw Information') }}</h6>
                                     <div class="row">

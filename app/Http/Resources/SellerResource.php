@@ -17,26 +17,27 @@ class SellerResource extends JsonResource
     public function toArray($request)
     {
 
- 
+        $shop = $this->resource?->sellerShop;
+        $shopName = $shop?->name ?: ($this->resource?->name ?: 'seller');
 
         return [
             "id"              => $this->id,
-            "name"            => @$this->sellerShop->name,
-            'logo'            => show_image(file_path()['shop_logo']['path'].'/'.@$this->sellerShop->shop_logo),
-            'banner'          => show_image(file_path()['shop_first_image']['path'].'/'.@$this->sellerShop->shop_first_image),
+            "name"            => $shop?->name,
+            'logo'            => show_image(file_path()['shop_logo']['path'].'/'.($shop?->shop_logo ?? '')),
+            'banner'          => show_image(file_path()['shop_first_image']['path'].'/'.($shop?->shop_first_image ?? '')),
             'created_at'      => diff_for_humans($this->created_at),
             'email'           => ($this->email),
             'phone'           => ($this->phone),
             'rating'          => $this->rating ? $this->rating : 0,
             'total_products'  => $this->product_count,
-            'short_details'   => $this->sellerShop->short_details,
-            'whatsapp_number' => @$this->sellerShop->whatsapp_number,
+            'short_details'   => $shop?->short_details,
+            'whatsapp_number' => $shop?->whatsapp_number,
             'is_whatsapp_order_active'  => 
-                                            @$this->sellerShop->whatsapp_order == StatusEnum::true->status() 
+                                            $shop?->whatsapp_order == StatusEnum::true->status() 
                                                ? true : false,
-            'total_followers' => $this->follow->count(),
-            'link'            => route('seller.store.visit',[make_slug($this->sellerShop->name), $this->id]),
-            'followers'       => (array)$this->follow->pluck('following_id')->toArray()
+            'total_followers' => $this->follow?->count() ?? 0,
+            'link'            => route('seller.store.visit',[make_slug($shopName), $this->id]),
+            'followers'       => (array)($this->follow?->pluck('following_id')->toArray() ?? [])
      ];
     }
 }

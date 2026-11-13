@@ -23,6 +23,7 @@ use App\Enums\Settings\GlobalConfig;
 use App\Enums\StatusEnum;
 use App\Models\RewardPointLog;
 use App\Models\Setting;
+use App\Models\KycLog;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
@@ -190,6 +191,11 @@ class DeliveryManController extends Controller
                                        ->latest()
                                        ->take(5)
                                        ->get(),
+
+            "kyc_logs" => KycLog::where('deliveryman_id', $id)
+                                ->latest()
+                                ->take(10)
+                                ->get(),
 
 
 

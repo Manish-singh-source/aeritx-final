@@ -575,6 +575,11 @@ class InhouseProductOrderController extends Controller
 
            $deliverymanOrder->save();
 
+            // Keep the order-level deliveryman relation in sync with the
+            // assignment record used by the delivery API.
+            $order->delivery_man_id = $deliveryMan->id;
+            $order->save();
+
             # Send delivery man firebase notification
             if(@$deliveryMan && @$deliveryMan->fcm_token){
                 if(@$deliveryMan->enable_push_notification == 1){

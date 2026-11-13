@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Deliveryman;
 
+use App\Http\Resources\OrderResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class DeliveryManOrderResource extends JsonResource
@@ -27,11 +28,10 @@ class DeliveryManOrderResource extends JsonResource
             'created_at'      => diff_for_humans($this->created_at),
             'time_line'       => $this->time_line,
         ];
-        if($this->relationLoaded('order')){
-            $data['order'] = [
-                'order_id'    => $this->order->id,
-                'order_number' => $this->order->order_id,
-            ];
+        if($this->relationLoaded('order') && $this->order){
+            // Return the complete order structure used by the delivery
+            // order-details endpoint, rather than only IDs.
+            $data['order'] = new OrderResource($this->order);
         }
 
         return $data;

@@ -15,7 +15,7 @@ class OrderCollection extends ResourceCollection
     public function toArray($request)
     {
             $data = [
-                'data' => $this->collection,
+                'data' => OrderResource::collection($this->collection),
             ];
 
             if ($this->resource instanceof \Illuminate\Pagination\LengthAwarePaginator) {

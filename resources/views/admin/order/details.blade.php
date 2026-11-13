@@ -638,6 +638,32 @@
 
             @php
                  $deliveryData = $order->deliveryManOrder;
+                 $selectedAddress = $order->billingAddress;
+                 $customerPickupAddress = null;
+
+                 if ($selectedAddress) {
+                     $addressParts = [
+                         data_get($selectedAddress, 'address.address'),
+                         data_get($selectedAddress, 'city.name'),
+                         data_get($selectedAddress, 'state.name'),
+                         data_get($selectedAddress, 'country.name'),
+                         $selectedAddress->zip,
+                     ];
+                     $customerPickupAddress = implode(', ', array_filter($addressParts));
+                 } elseif ($order->billing_information) {
+                     $addressParts = [
+                         data_get($order->billing_information, 'address'),
+                         data_get($order->billing_information, 'city'),
+                         data_get($order->billing_information, 'state'),
+                         data_get($order->billing_information, 'country'),
+                         data_get($order->billing_information, 'zip'),
+                     ];
+                     $customerPickupAddress = implode(', ', array_filter($addressParts));
+                 }
+
+                 $pickupAddress = filled(data_get($deliveryData, 'pickup_location'))
+                     ? $deliveryData->pickup_location
+                     : $customerPickupAddress;
             @endphp
 
             <div>
@@ -674,7 +700,7 @@
                             </label>
 
 
-                            <textarea @if($order->status  == App\Models\Order::DELIVERED) readonly @endif name="pickup_address" class="form-control"  required  placeholder="{{translate('Enter pickup address')}}  "  id="note" cols="4" rows="4">{{@$deliveryData->pickup_location}}</textarea>
+                            <textarea @if($order->status  == App\Models\Order::DELIVERED) readonly @endif name="pickup_address" class="form-control"  required  placeholder="{{translate('Enter pickup address')}}  "  id="note" cols="4" rows="4">{{ old('pickup_address', $pickupAddress) }}</textarea>
 
                         </div>
 

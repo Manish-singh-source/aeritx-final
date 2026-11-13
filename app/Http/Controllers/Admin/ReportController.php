@@ -52,6 +52,9 @@ class ReportController extends Controller
     {
         $title        = translate('KYC Logs');
         $reports      = KycLog::with(['seller','deliveryMan'])
+                                  ->when(request()->input('delivery_man'), function ($query, $deliveryManId) {
+                                      $query->where('deliveryman_id', $deliveryManId);
+                                  })
                                   ->search()->date()
                                   ->latest()
                                   ->paginate(site_settings('pagination_number',10));

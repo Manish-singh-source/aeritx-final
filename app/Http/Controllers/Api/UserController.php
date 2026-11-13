@@ -48,6 +48,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use App\Models\DeliveryMan;
 use App\Models\DeliveryManRating;
 use App\Models\RewardPointLog;
@@ -830,6 +831,7 @@ class UserController extends Controller
 
 
             $calculations = $this->checkoutService->calculate($items);
+            $shippingResponse = null;
 
       
 
@@ -876,18 +878,32 @@ class UserController extends Controller
             }
 
         
-            $order = $this->checkoutService->createOrder($request,$calculations,@$shippingResponse,$this->user ,$billingAddress->id);
-            
+            $order = DB::transaction(function () use ($request, $calculations, $shippingResponse, $user, $billingAddress, $items) {
+                $order = $this->checkoutService->createOrder(
+                    $request,
+                    $calculations,
+                    $shippingResponse,
+                    $user,
+                    $billingAddress->id
+                );
 
-            if($user){
-                $order->customer_id = @$user->id;
-                $order->save();
-            }
+                $this->checkoutService->createOrderDetails($items, $order);
 
+                return $order->load([
+                    'customer',
+                    'orderStatus',
+                    'log',
+                    'orderDetails',
+                    'shipping',
+                    'paymentMethod',
+                    'orderDetails.product',
+                    'deliveryman',
+                    'orderRatings',
+                    'orderRatings.user',
+                    'billingAddress.user',
+                ]);
+            });
 
-            $order->load(['customer','orderStatus','log','orderDetails','shipping','paymentMethod','orderDetails.product','deliveryman','orderRatings','orderRatings.user','billingAddress.user']);
-
-            $this->checkoutService->createOrderDetails( $items,$order);
             $this->checkoutService->notifyUser($order ,Cache::get(CacheKey::API_CURRENCY->value));
 
 
