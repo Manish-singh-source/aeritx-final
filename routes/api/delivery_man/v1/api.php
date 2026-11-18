@@ -35,7 +35,7 @@ Route::group(['middleware' => ['api.lang','api.currency','sanitizer','maintenanc
     Route::post('/register',[RegisterController::class,'register']);
 
     #PASSWORD RESET ROUTE
-    Route::post('/verify/phone',[PasswordResetController::class,'verifyPhone']);
+    Route::post('/verify/email',[PasswordResetController::class,'verifyEmail']);
     Route::post('/verify/otp/code',[PasswordResetController::class,'verifyCode']);
     Route::post('/password/reset',[PasswordResetController::class,'passwordReset']);
 
